@@ -1,0 +1,8 @@
+- I will test the extension manually, do not create test files or test functions, and do not test on your own.
+- We aim for single correct way to achieve our goal, forbid to use backup plans and functions.
+- More information about Silly Tavern can be found here: https://deepwiki.com/SillyTavern/SillyTavern
+- Info about tavern helper can be found in original github website: https://github.com/n0vi028/JS-Slash-Runner-Doc
+- 出bug的时候，找到问题源头并修改，不要添加治标不治本的覆盖类型的函数逻辑。
+- Remember rules when we develope this extension:
+- 1. When designing, can reference famous desgin pages and applications, especially openai or claude/Gemini web frontpages, make the page beautiful and user friendly at the same time. 
+- 2. Make the function names clear and easy to understand, do not add logics that has similar names or similar functions.

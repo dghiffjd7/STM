@@ -1,0 +1,174 @@
+import { useState, useEffect } from 'react';
+
+interface TTSSectionProps {
+  config: any;
+  toast: any;
+}
+
+const VOICE_OPTIONS = [
+  { value: 'female-tianmei', label: 'Female - Tianmei' },
+  { value: 'female-shaonv', label: 'Female - Shaonv' },
+  { value: 'male-qn-qingse', label: 'Male - Qingse' },
+  { value: 'male-qn-jingying', label: 'Male - Jingying' },
+];
+
+export function TTSSection({ config, toast }: TTSSectionProps) {
+  const [apiKey, setApiKey] = useState('');
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  const tts = config.config?.tts;
+
+  useEffect(() => {
+    // Check if Minimax API key is configured
+    const checkApiKey = async () => {
+      try {
+        const status = await config.getSecretStatus('minimax');
+        setHasApiKey(status.hasApiKey);
+      } catch (err) {
+        console.error('Failed to check Minimax API key status:', err);
+      }
+    };
+    checkApiKey();
+  }, [config]);
+
+  const handleSaveApiKey = async () => {
+    if (!apiKey.trim()) {
+      toast.error('Please enter an API key');
+      return;
+    }
+
+    const result = await config.setSecretValue('minimax', 'apiKey', apiKey);
+
+    if (result.success) {
+      toast.success('Minimax API Key saved');
+      setApiKey('');
+      setHasApiKey(true);
+    } else {
+      toast.error(result.error || 'Failed to save API key');
+    }
+  };
+
+  const handleUpdate = async (field: string, value: any) => {
+    const result = await config.update({
+      tts: {
+        ...tts,
+        [field]: value,
+      },
+    });
+
+    if (result.success) {
+      toast.success('TTS settings updated');
+    } else {
+      toast.error(result.error || 'Failed to update settings');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Minimax API Key */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+        <h3 className="text-lg font-semibold">Minimax API Key</h3>
+        <div className="flex gap-2">
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={hasApiKey ? '•••• Saved' : 'Enter Minimax API Key'}
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+          />
+          <button
+            onClick={handleSaveApiKey}
+            disabled={!apiKey.trim()}
+            className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+
+      {/* TTS Settings */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+        <h3 className="text-lg font-semibold">TTS Settings</h3>
+
+        {/* Enabled Toggle */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">Enable TTS</label>
+          <button
+            onClick={() => handleUpdate('enabled', !tts?.enabled)}
+            className={`relative w-12 h-6 rounded-full transition-colors ${
+              tts?.enabled ? 'bg-pink-500' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                tts?.enabled ? 'translate-x-6' : ''
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Voice Selection */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Voice</label>
+          <select
+            value={tts?.voice || 'female-tianmei'}
+            onChange={(e) => handleUpdate('voice', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+          >
+            {VOICE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Speed Slider */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Speed: {tts?.speed?.toFixed(1) || '1.0'}x
+          </label>
+          <input
+            type="range"
+            min="0.5"
+            max="2.0"
+            step="0.1"
+            value={tts?.speed || 1.0}
+            onChange={(e) => handleUpdate('speed', parseFloat(e.target.value))}
+            className="w-full"
+          />
+        </div>
+
+        {/* Auto Play Toggle */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">Auto Play Responses</label>
+          <button
+            onClick={() => handleUpdate('autoPlay', !tts?.autoPlay)}
+            className={`relative w-12 h-6 rounded-full transition-colors ${
+              tts?.autoPlay ? 'bg-pink-500' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                tts?.autoPlay ? 'translate-x-6' : ''
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Cache Size */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Cache Size (MB)</label>
+          <input
+            type="number"
+            min="10"
+            max="1000"
+            value={tts?.cacheMB || 100}
+            onChange={(e) => handleUpdate('cacheMB', parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:main:*)",
+      "Bash(npm rebuild:*)",
+      "Bash(npm run build:preload:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(npx esbuild:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:main:*)",
+      "Bash(npm run dev:preload:*)",
+      "Bash(tsc:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
