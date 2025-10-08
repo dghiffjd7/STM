@@ -13,7 +13,10 @@
       "Bash(npm run dev:main:*)",
       "Bash(npm run dev:preload:*)",
       "Bash(tsc:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(awk:*)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []
