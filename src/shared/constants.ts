@@ -20,6 +20,11 @@ export const IPC_CHANNELS = {
   TTS_SPEAK: 'ipc://tts.speak',
   TTS_CANCEL: 'ipc://tts.cancel',
 
+  // STT
+  STT_START: 'ipc://stt.start',
+  STT_STOP: 'ipc://stt.stop',
+  STT_RESULT: 'ipc://stt.result',
+
   // File system
   FS_EXEC: 'ipc://fs.exec',
 
@@ -70,6 +75,16 @@ export const DEFAULT_CONFIG = {
     speed: 1.0,
     autoPlay: true,
     cacheMB: 100,
+  },
+  stt: {
+    enabled: false,
+    provider: 'browser' as const,
+    language: 'zh-CN',
+    continuous: false,
+    vadEnabled: true,
+    vadThreshold: 0.5,
+    autoSubmit: true,
+    silenceTimeout: 1500,
   },
   permissions: {
     allowPaths: [] as string[],

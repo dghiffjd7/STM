@@ -114,10 +114,11 @@ export async function deleteSecret(provider: Provider | string, kind: string): P
 }
 
 export async function getSecretStatus(provider: Provider | string): Promise<SecretStatus> {
-  const [apiKey, geminiApiKey, serviceAccount] = await Promise.all([
+  const [apiKey, geminiApiKey, serviceAccount, groupId] = await Promise.all([
     getSecret(provider, 'apiKey'),
     getSecret(provider, 'geminiApiKey'),
     getSecret(provider, 'serviceAccountJsonPath'),
+    getSecret(provider, 'groupId'),
   ]);
 
   return {
@@ -125,5 +126,6 @@ export async function getSecretStatus(provider: Provider | string): Promise<Secr
     hasApiKey: !!apiKey,
     hasGeminiApiKey: !!geminiApiKey,
     hasServiceAccount: !!serviceAccount,
+    hasGroupId: !!groupId,
   };
 }

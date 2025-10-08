@@ -56,6 +56,19 @@ export interface TTSSection {
   cacheMB: number;
 }
 
+export type STTProvider = 'browser' | 'openai' | 'minimax';
+
+export interface STTSection {
+  enabled: boolean;
+  provider: STTProvider;
+  language: string;
+  continuous: boolean;
+  vadEnabled: boolean;
+  vadThreshold: number;
+  autoSubmit: boolean;
+  silenceTimeout: number; // ms
+}
+
 export interface PermissionsSection {
   allowPaths: string[];
   denyPaths: string[];
@@ -83,6 +96,7 @@ export interface Profile {
   createdAt: number;
   ai?: Partial<AISection>;
   tts?: Partial<TTSSection>;
+  stt?: Partial<STTSection>;
   appearance?: Partial<AppearanceSection>;
 }
 
@@ -90,6 +104,7 @@ export interface STMConfig {
   version: number;
   ai: AISection;
   tts: TTSSection;
+  stt: STTSection;
   permissions: PermissionsSection;
   shortcuts: ShortcutSection;
   appearance: AppearanceSection;
@@ -101,6 +116,7 @@ export interface SecretStatus {
   hasApiKey: boolean;
   hasGeminiApiKey: boolean;
   hasServiceAccount: boolean;
+  hasGroupId: boolean; // For Minimax TTS
 }
 
 export interface SecretSetRequest {
@@ -136,6 +152,24 @@ export interface TTSResult {
   cacheKey: string;
   filePath: string;
   durationMs: number;
+}
+
+// STT types
+export interface STTStartRequest {
+  language?: string;
+  continuous?: boolean;
+}
+
+export interface STTTranscriptChunk {
+  type: 'interim' | 'final';
+  text: string;
+  confidence?: number;
+}
+
+export interface STTResult {
+  text: string;
+  isFinal: boolean;
+  confidence?: number;
 }
 
 // Permission types

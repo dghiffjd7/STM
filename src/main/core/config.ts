@@ -56,6 +56,7 @@ export function setConfig(patch: Partial<STMConfig>): void {
     // Deep merge sections
     ai: patch.ai ? { ...current.ai, ...patch.ai } : current.ai,
     tts: patch.tts ? { ...current.tts, ...patch.tts } : current.tts,
+    stt: patch.stt ? { ...current.stt, ...patch.stt } : current.stt,
     permissions: patch.permissions ? { ...current.permissions, ...patch.permissions } : current.permissions,
     shortcuts: patch.shortcuts ? { ...current.shortcuts, ...patch.shortcuts } : current.shortcuts,
     appearance: patch.appearance ? { ...current.appearance, ...patch.appearance } : current.appearance,
@@ -132,6 +133,7 @@ export function applyProfile(id: string): void {
     ...current,
     ai: profile.ai ? { ...current.ai, ...profile.ai } : current.ai,
     tts: profile.tts ? { ...current.tts, ...profile.tts } : current.tts,
+    stt: profile.stt ? { ...current.stt, ...profile.stt } : current.stt,
     appearance: profile.appearance ? { ...current.appearance, ...profile.appearance } : current.appearance,
   };
 

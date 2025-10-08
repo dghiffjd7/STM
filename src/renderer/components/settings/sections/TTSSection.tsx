@@ -13,40 +13,24 @@ const VOICE_OPTIONS = [
 ];
 
 export function TTSSection({ config, toast }: TTSSectionProps) {
-  const [apiKey, setApiKey] = useState('');
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [hasGroupId, setHasGroupId] = useState(false);
 
   const tts = config.config?.tts;
 
   useEffect(() => {
-    // Check if Minimax API key is configured
-    const checkApiKey = async () => {
+    // Check if Minimax credentials are configured
+    const checkCredentials = async () => {
       try {
         const status = await config.getSecretStatus('minimax');
         setHasApiKey(status.hasApiKey);
+        setHasGroupId(status.hasGroupId);
       } catch (err) {
-        console.error('Failed to check Minimax API key status:', err);
+        console.error('Failed to check Minimax credentials status:', err);
       }
     };
-    checkApiKey();
+    checkCredentials();
   }, [config]);
-
-  const handleSaveApiKey = async () => {
-    if (!apiKey.trim()) {
-      toast.error('Please enter an API key');
-      return;
-    }
-
-    const result = await config.setSecretValue('minimax', 'apiKey', apiKey);
-
-    if (result.success) {
-      toast.success('Minimax API Key saved');
-      setApiKey('');
-      setHasApiKey(true);
-    } else {
-      toast.error(result.error || 'Failed to save API key');
-    }
-  };
 
   const handleUpdate = async (field: string, value: any) => {
     const result = await config.update({
@@ -63,27 +47,46 @@ export function TTSSection({ config, toast }: TTSSectionProps) {
     }
   };
 
+  const isConfigured = hasApiKey && hasGroupId;
+
   return (
     <div className="space-y-6">
-      {/* Minimax API Key */}
+      {/* Minimax Credentials Status */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
-        <h3 className="text-lg font-semibold">Minimax API Key</h3>
-        <div className="flex gap-2">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={hasApiKey ? '•••• Saved' : 'Enter Minimax API Key'}
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
-          />
-          <button
-            onClick={handleSaveApiKey}
-            disabled={!apiKey.trim()}
-            className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50"
-          >
-            Save
-          </button>
+        <h3 className="text-lg font-semibold">Minimax TTS Configuration</h3>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                hasApiKey ? 'bg-green-500' : 'bg-red-500'
+              }`}
+            />
+            <span className="text-sm">
+              API Key: {hasApiKey ? 'Configured' : 'Not configured'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                hasGroupId ? 'bg-green-500' : 'bg-red-500'
+              }`}
+            />
+            <span className="text-sm">
+              Group ID: {hasGroupId ? 'Configured' : 'Not configured'}
+            </span>
+          </div>
         </div>
+
+        {!isConfigured && (
+          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Please configure your Minimax credentials in the{' '}
+              <strong>Secrets</strong> section to enable TTS.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* TTS Settings */}

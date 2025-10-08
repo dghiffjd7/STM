@@ -7,6 +7,7 @@ import { LLMSection } from './sections/LLMSection';
 import { SecretsSection } from './sections/SecretsSection';
 import { ProfilesSection } from './sections/ProfilesSection';
 import { TTSSection } from './sections/TTSSection';
+import { STTSection } from './sections/STTSection';
 import { PermissionsSection } from './sections/PermissionsSection';
 import { ShortcutsSection } from './sections/ShortcutsSection';
 import { AppearanceSection } from './sections/AppearanceSection';
@@ -125,6 +126,12 @@ export function SettingsRoot({ onClose, standalone = false }: SettingsRootProps)
                 TTS
               </Tabs.Trigger>
               <Tabs.Trigger
+                value="stt"
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-colors"
+              >
+                STT
+              </Tabs.Trigger>
+              <Tabs.Trigger
                 value="permissions"
                 className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-colors"
               >
@@ -159,6 +166,10 @@ export function SettingsRoot({ onClose, standalone = false }: SettingsRootProps)
 
               <Tabs.Content value="tts">
                 <TTSSection config={config} toast={toast} />
+              </Tabs.Content>
+
+              <Tabs.Content value="stt">
+                <STTSection config={config} toast={toast} />
               </Tabs.Content>
 
               <Tabs.Content value="permissions">
@@ -234,6 +245,12 @@ export function SettingsRoot({ onClose, standalone = false }: SettingsRootProps)
                 TTS
               </Tabs.Trigger>
               <Tabs.Trigger
+                value="stt"
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-colors"
+              >
+                STT
+              </Tabs.Trigger>
+              <Tabs.Trigger
                 value="permissions"
                 className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 data-[state=active]:bg-pink-500 data-[state=active]:text-white transition-colors"
               >
@@ -268,6 +285,10 @@ export function SettingsRoot({ onClose, standalone = false }: SettingsRootProps)
 
               <Tabs.Content value="tts">
                 <TTSSection config={config} toast={toast} />
+              </Tabs.Content>
+
+              <Tabs.Content value="stt">
+                <STTSection config={config} toast={toast} />
               </Tabs.Content>
 
               <Tabs.Content value="permissions">

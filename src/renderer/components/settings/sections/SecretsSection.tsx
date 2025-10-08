@@ -10,6 +10,9 @@ export function SecretsSection({ config, toast }: SecretsSectionProps) {
   const [status, setStatus] = useState<any>(null);
   const [apiKey, setApiKey] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [minimaxStatus, setMinimaxStatus] = useState<any>(null);
+  const [minimaxApiKey, setMinimaxApiKey] = useState('');
+  const [minimaxGroupId, setMinimaxGroupId] = useState('');
 
   const provider = config.config?.ai.provider as Provider;
   const ai = config.config?.ai;
@@ -18,6 +21,8 @@ export function SecretsSection({ config, toast }: SecretsSectionProps) {
     if (provider) {
       config.getSecretStatus(provider).then(setStatus);
     }
+    // Load Minimax status separately (always needed for TTS)
+    config.getSecretStatus('minimax').then(setMinimaxStatus);
   }, [provider, config]);
 
   const handleSaveSecret = async (kind: string, value: string) => {
@@ -51,6 +56,25 @@ export function SecretsSection({ config, toast }: SecretsSectionProps) {
       toast.success('Settings updated');
     } else {
       toast.error(result.error || 'Failed to update');
+    }
+  };
+
+  const handleSaveMinimaxSecret = async (kind: string, value: string) => {
+    if (!value.trim()) {
+      toast.error('Please enter a value');
+      return;
+    }
+
+    const result = await config.setSecretValue('minimax', kind, value);
+
+    if (result.success) {
+      toast.success('Minimax secret saved');
+      setMinimaxApiKey('');
+      setMinimaxGroupId('');
+      const newStatus = await config.getSecretStatus('minimax');
+      setMinimaxStatus(newStatus);
+    } else {
+      toast.error(result.error || 'Failed to save secret');
     }
   };
 
@@ -236,6 +260,57 @@ export function SecretsSection({ config, toast }: SecretsSectionProps) {
           )}
         </>
       )}
+
+      {/* Minimax TTS Configuration (always shown) */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+        <h3 className="text-lg font-semibold">Minimax TTS</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Configure Minimax Text-to-Speech for voice output
+        </p>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">API Key</label>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={minimaxApiKey}
+              onChange={(e) => setMinimaxApiKey(e.target.value)}
+              placeholder={minimaxStatus?.hasApiKey ? '•••• Saved' : 'Enter API key'}
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+            />
+            <button
+              onClick={() => handleSaveMinimaxSecret('apiKey', minimaxApiKey)}
+              disabled={!minimaxApiKey.trim()}
+              className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Group ID</label>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={minimaxGroupId}
+              onChange={(e) => setMinimaxGroupId(e.target.value)}
+              placeholder={minimaxStatus?.hasGroupId ? '•••• Saved' : 'Enter group ID'}
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white"
+            />
+            <button
+              onClick={() => handleSaveMinimaxSecret('groupId', minimaxGroupId)}
+              disabled={!minimaxGroupId.trim()}
+              className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Your Minimax Group ID (required for TTS API)
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
