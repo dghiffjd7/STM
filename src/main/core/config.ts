@@ -57,6 +57,7 @@ export function setConfig(patch: Partial<STMConfig>): void {
     ai: patch.ai ? { ...current.ai, ...patch.ai } : current.ai,
     tts: patch.tts ? { ...current.tts, ...patch.tts } : current.tts,
     stt: patch.stt ? { ...current.stt, ...patch.stt } : current.stt,
+    characters: patch.characters ? { ...current.characters, ...patch.characters } : current.characters,
     permissions: patch.permissions ? { ...current.permissions, ...patch.permissions } : current.permissions,
     shortcuts: patch.shortcuts ? { ...current.shortcuts, ...patch.shortcuts } : current.shortcuts,
     appearance: patch.appearance ? { ...current.appearance, ...patch.appearance } : current.appearance,

@@ -30,7 +30,9 @@
     "electron-store": "^8.2.0",
     "google-auth-library": "^9.6.3",
     "keytar": "^7.9.0",
-    "lottie-web": "^5.12.2"
+    "lottie-web": "^5.12.2",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^8.14.0"
   },
   "devDependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

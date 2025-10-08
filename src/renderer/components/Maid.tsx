@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useMaidState } from '../hooks/useMaidState';
+import { CharacterRenderer } from './CharacterRenderer';
+import { useConfigStore } from '../store';
 
 interface MaidProps {
   onClick?: () => void;
 }
 
+// Feature flag for Live2D - set to true when model is ready
+const USE_LIVE2D = false;
+
 export function Maid({ onClick }: MaidProps) {
   const { state, setState } = useMaidState();
+  const { config } = useConfigStore();
   const [isDragging, setIsDragging] = useState(false);
   const constraintsRef = useRef<HTMLDivElement>(null);
 
@@ -17,6 +23,9 @@ export function Maid({ onClick }: MaidProps) {
   // Simple rotation based on drag
   const rotate = useTransform(x, [-100, 100], [-5, 5]);
 
+  // Get current character ID
+  const characterId = config?.characters?.currentCharacterId || 'default';
+
   useEffect(() => {
     if (isDragging) {
       setState('drag');
@@ -25,7 +34,7 @@ export function Maid({ onClick }: MaidProps) {
     }
   }, [isDragging, state, setState]);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     if (!isDragging && onClick) {
       onClick();
     }
@@ -43,38 +52,53 @@ export function Maid({ onClick }: MaidProps) {
         onHoverStart={() => !isDragging && setState('hover')}
         onHoverEnd={() => !isDragging && setState('idle')}
         onClick={handleClick}
-        style={{ x, y, rotate }}
+        style={{
+          x,
+          y,
+          rotate,
+          scale: 'var(--character-scale, 1)'
+        }}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing"
       >
         <div className="relative w-48 h-48">
-          {/* Placeholder maid sprite - replace with actual artwork */}
-          <div
-            className={`w-full h-full rounded-full flex items-center justify-center text-white font-bold text-4xl transition-all duration-300 ${
-              state === 'idle'
-                ? 'bg-gradient-to-br from-pink-400 to-purple-500'
-                : state === 'hover'
-                ? 'bg-gradient-to-br from-pink-500 to-purple-600 scale-110'
-                : state === 'drag'
-                ? 'bg-gradient-to-br from-pink-300 to-purple-400 scale-95'
-                : state === 'speak'
-                ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse'
-                : state === 'think'
-                ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                : state === 'error'
-                ? 'bg-gradient-to-br from-red-400 to-pink-500'
-                : 'bg-gradient-to-br from-gray-400 to-gray-600'
-            }`}
-          >
-            <span className="select-none">
-              {state === 'idle' && '😊'}
-              {state === 'hover' && '😄'}
-              {state === 'drag' && '😮'}
-              {state === 'speak' && '💬'}
-              {state === 'think' && '🤔'}
-              {state === 'error' && '😵'}
-              {state === 'sleep' && '😴'}
-            </span>
-          </div>
+          {USE_LIVE2D ? (
+            // Live2D character renderer
+            <CharacterRenderer
+              characterId={characterId}
+              state={state}
+              className="w-full h-full"
+              onError={(err) => console.error('[Maid] Character load error:', err)}
+            />
+          ) : (
+            // Fallback placeholder maid sprite
+            <div
+              className={`w-full h-full rounded-full flex items-center justify-center text-white font-bold text-4xl transition-all duration-300 ${
+                state === 'idle'
+                  ? 'bg-gradient-to-br from-pink-400 to-purple-500'
+                  : state === 'hover'
+                  ? 'bg-gradient-to-br from-pink-500 to-purple-600 scale-110'
+                  : state === 'drag'
+                  ? 'bg-gradient-to-br from-pink-300 to-purple-400 scale-95'
+                  : state === 'speak'
+                  ? 'bg-gradient-to-br from-blue-400 to-cyan-500 animate-pulse'
+                  : state === 'think'
+                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                  : state === 'error'
+                  ? 'bg-gradient-to-br from-red-400 to-pink-500'
+                  : 'bg-gradient-to-br from-gray-400 to-gray-600'
+              }`}
+            >
+              <span className="select-none">
+                {state === 'idle' && '😊'}
+                {state === 'hover' && '😄'}
+                {state === 'drag' && '😮'}
+                {state === 'speak' && '💬'}
+                {state === 'think' && '🤔'}
+                {state === 'error' && '😵'}
+                {state === 'sleep' && '😴'}
+              </span>
+            </div>
+          )}
 
           {/* State label for debugging */}
           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-gray-600 bg-white/80 px-2 py-1 rounded">

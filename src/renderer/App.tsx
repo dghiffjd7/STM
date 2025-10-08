@@ -5,13 +5,42 @@ import { ChatView } from './components/ChatView';
 import { useConfigStore } from './store';
 
 export function App() {
-  const { loadConfig } = useConfigStore();
+  const { loadConfig, config } = useConfigStore();
   const [showUI, setShowUI] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
+
+  // Apply appearance config to document and window
+  useEffect(() => {
+    if (!config) return;
+
+    const { theme, opacity, size, alwaysOnTop } = config.appearance;
+
+    // Apply theme
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      // System theme
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    // Apply size via CSS variable (for character scaling)
+    const sizeScale = size === 'sm' ? 0.8 : size === 'lg' ? 1.2 : 1.0;
+    document.documentElement.style.setProperty('--character-scale', sizeScale.toString());
+
+    // Notify main process to update window properties
+    window.electronAPI.sysUpdateAppearance({ opacity, alwaysOnTop });
+  }, [config]);
 
   const handleOpenSettings = () => {
     window.electronAPI.sysOpenSettings();

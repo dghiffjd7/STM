@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sysSetIgnoreMouse: (ignore: boolean) => {
     ipcRenderer.send(IPC_CHANNELS.SYS_SET_IGNORE_MOUSE, ignore);
   },
+  sysUpdateAppearance: (appearance: any) => {
+    ipcRenderer.send(IPC_CHANNELS.SYS_UPDATE_APPEARANCE, appearance);
+  },
 
   // Permission
   permissionRequest: (request: PermissionRequest): Promise<PermissionResponse> => {
@@ -104,6 +107,7 @@ export type ElectronAPI = {
   sysClose: () => void;
   sysOpenSettings: () => void;
   sysSetIgnoreMouse: (ignore: boolean) => void;
+  sysUpdateAppearance: (appearance: any) => void;
   permissionRequest: (request: PermissionRequest) => Promise<PermissionResponse>;
   permissionCheck: (domain: PermissionDomain, scope?: string) => Promise<boolean>;
   configGet: () => Promise<AppConfig>;

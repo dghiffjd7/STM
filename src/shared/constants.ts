@@ -34,6 +34,7 @@ export const IPC_CHANNELS = {
   SYS_CLOSE: 'ipc://sys.close',
   SYS_OPEN_SETTINGS: 'ipc://sys.openSettings',
   SYS_SET_IGNORE_MOUSE: 'ipc://sys.setIgnoreMouse',
+  SYS_UPDATE_APPEARANCE: 'ipc://sys.updateAppearance',
 
   // Permission
   PERMISSION_REQUEST: 'ipc://permission.request',
@@ -85,6 +86,17 @@ export const DEFAULT_CONFIG = {
     vadThreshold: 0.5,
     autoSubmit: true,
     silenceTimeout: 1500,
+  },
+  characters: {
+    currentCharacterId: 'default',
+    characters: [
+      {
+        id: 'default',
+        name: 'Default Maid',
+        path: '',
+        enabled: true,
+      },
+    ],
   },
   permissions: {
     allowPaths: [] as string[],

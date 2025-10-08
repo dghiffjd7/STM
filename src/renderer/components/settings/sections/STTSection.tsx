@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface STTSectionProps {
   config: any;
   toast: any;
@@ -13,6 +15,8 @@ const LANGUAGE_OPTIONS = [
 
 export function STTSection({ config, toast }: STTSectionProps) {
   const stt = config.config?.stt;
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleUpdate = async (field: string, value: any) => {
     const result = await config.update({
@@ -34,6 +38,83 @@ export function STTSection({ config, toast }: STTSectionProps) {
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const isSupported = Boolean(SpeechRecognition);
 
+  const handleTestMicrophone = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      // Test microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Stop the stream immediately
+      stream.getTracks().forEach((track) => track.stop());
+
+      // Test speech recognition
+      if (isSupported) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = stt?.language || 'zh-CN';
+
+        recognition.onstart = () => {
+          setTestResult({
+            success: true,
+            message: '✓ Microphone and speech recognition working! Say something to test...',
+          });
+          setTimeout(() => {
+            recognition.stop();
+          }, 3000);
+        };
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setTestResult({
+            success: true,
+            message: `✓ Test successful! Heard: "${transcript}"`,
+          });
+          toast.success('Microphone test passed');
+        };
+
+        recognition.onerror = (event: any) => {
+          let errorMsg = 'Test failed';
+          if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+            errorMsg = '❌ Microphone permission denied';
+          } else if (event.error === 'no-speech') {
+            errorMsg = '⚠️ No speech detected. Microphone is working but didn\'t hear anything.';
+          } else {
+            errorMsg = `❌ Error: ${event.error}`;
+          }
+          setTestResult({ success: false, message: errorMsg });
+        };
+
+        recognition.onend = () => {
+          setIsTesting(false);
+        };
+
+        recognition.start();
+      } else {
+        setTestResult({
+          success: true,
+          message: '✓ Microphone access granted (but Speech Recognition not supported)',
+        });
+        setIsTesting(false);
+      }
+    } catch (err: any) {
+      console.error('Microphone test failed:', err);
+
+      let errorMsg = '❌ Microphone test failed';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMsg = '❌ Microphone permission denied. Please allow access in your browser.';
+      } else if (err.name === 'NotFoundError') {
+        errorMsg = '❌ No microphone found. Please connect a microphone.';
+      } else {
+        errorMsg = `❌ Error: ${err.message}`;
+      }
+
+      setTestResult({ success: false, message: errorMsg });
+      setIsTesting(false);
+      toast.error('Microphone test failed');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Browser Support Warning */}
@@ -51,7 +132,29 @@ export function STTSection({ config, toast }: STTSectionProps) {
 
       {/* STT Settings */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
-        <h3 className="text-lg font-semibold">Speech-to-Text Settings</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Speech-to-Text Settings</h3>
+          <button
+            onClick={handleTestMicrophone}
+            disabled={isTesting || !isSupported}
+            className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isTesting ? 'Testing...' : '🎤 Test Microphone'}
+          </button>
+        </div>
+
+        {/* Test Result */}
+        {testResult && (
+          <div
+            className={`p-3 rounded-lg text-sm ${
+              testResult.success
+                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
+                : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+            }`}
+          >
+            {testResult.message}
+          </div>
+        )}
 
         {/* Enabled Toggle */}
         <div className="flex items-center justify-between">
@@ -119,7 +222,7 @@ export function STTSection({ config, toast }: STTSectionProps) {
           <div>
             <label className="text-sm font-medium">Auto Submit</label>
             <p className="text-xs text-gray-500 mt-1">
-              Automatically fill input after silence
+              Automatically send message after speech ends
             </p>
           </div>
           <button

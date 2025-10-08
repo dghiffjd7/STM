@@ -63,8 +63,8 @@ export interface STTSection {
   provider: STTProvider;
   language: string;
   continuous: boolean;
-  vadEnabled: boolean;
-  vadThreshold: number;
+  vadEnabled: boolean; // TODO: Not implemented - reserved for future Web Audio VAD
+  vadThreshold: number; // TODO: Not implemented - reserved for voice activity detection threshold
   autoSubmit: boolean;
   silenceTimeout: number; // ms
 }
@@ -100,11 +100,51 @@ export interface Profile {
   appearance?: Partial<AppearanceSection>;
 }
 
+export interface CharacterSection {
+  currentCharacterId: string;
+  characters: CharacterInfo[];
+}
+
+export interface CharacterInfo {
+  id: string;
+  name: string;
+  path: string;
+  thumbnailPath?: string;
+  enabled: boolean;
+}
+
+export interface CharacterManifest {
+  id: string;
+  name: string;
+  version: string;
+  author?: string;
+  model: {
+    path: string;
+    scale: number;
+    position: { x: number; y: number };
+  };
+  motions: {
+    [state: string]: string[];
+  };
+  expressions?: {
+    [name: string]: string;
+  };
+  sounds?: {
+    [state: string]: string[];
+  };
+  lipSync?: {
+    enabled: boolean;
+    parameterName: string;
+    smoothing: number;
+  };
+}
+
 export interface STMConfig {
   version: number;
   ai: AISection;
   tts: TTSSection;
   stt: STTSection;
+  characters: CharacterSection;
   permissions: PermissionsSection;
   shortcuts: ShortcutSection;
   appearance: AppearanceSection;

@@ -79,7 +79,7 @@ async function callMinimaxTTS(request: TTSRequest): Promise<Buffer> {
       throw new Error(`Minimax API error (${response.status}): ${errorText}`);
     }
 
-    const result: MinimaxTTSResponse = await response.json();
+    const result = (await response.json()) as MinimaxTTSResponse;
 
     // Check for API-level errors
     if (result.base_resp && result.base_resp.status_code !== 0) {

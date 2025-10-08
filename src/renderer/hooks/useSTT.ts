@@ -5,15 +5,31 @@ import { useConfigStore } from '../store';
 const SpeechRecognition =
   (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
+export type STTErrorType =
+  | 'not-supported'
+  | 'not-enabled'
+  | 'permission-denied'
+  | 'no-microphone'
+  | 'network-error'
+  | 'recognition-error'
+  | 'aborted'
+  | 'not-initialized';
+
+export interface STTError {
+  type: STTErrorType;
+  message: string;
+}
+
 export function useSTT() {
   const config = useConfigStore((state) => state.config);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<STTError | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isStoppingRef = useRef(false);
 
   const isSupported = Boolean(SpeechRecognition);
   const isEnabled = config?.stt?.enabled ?? false;
@@ -67,12 +83,44 @@ export function useSTT() {
 
     recognition.onerror = (event: any) => {
       console.error('[STT] Recognition error:', event.error);
-      setError(`Speech recognition error: ${event.error}`);
+
+      let errorType: STTErrorType;
+      let errorMessage: string;
+
+      switch (event.error) {
+        case 'not-allowed':
+        case 'permission-denied':
+          errorType = 'permission-denied';
+          errorMessage = 'Microphone permission denied. Please allow microphone access in your browser.';
+          break;
+        case 'no-speech':
+          // Silent error, just stop
+          return;
+        case 'audio-capture':
+          errorType = 'no-microphone';
+          errorMessage = 'No microphone detected. Please connect a microphone.';
+          break;
+        case 'network':
+          errorType = 'network-error';
+          errorMessage = 'Network error. Speech recognition requires internet connection.';
+          break;
+        case 'aborted':
+          errorType = 'aborted';
+          errorMessage = 'Speech recognition was aborted.';
+          break;
+        default:
+          errorType = 'recognition-error';
+          errorMessage = `Speech recognition error: ${event.error}`;
+      }
+
+      setError({ type: errorType, message: errorMessage });
       setIsListening(false);
+      isStoppingRef.current = false;
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      isStoppingRef.current = false;
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = null;
@@ -93,18 +141,32 @@ export function useSTT() {
 
   const start = useCallback(async () => {
     if (!isSupported) {
-      setError('Speech recognition is not supported in this browser');
+      setError({
+        type: 'not-supported',
+        message: 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.',
+      });
       return;
     }
 
     if (!isEnabled) {
-      setError('STT is disabled in settings');
+      setError({
+        type: 'not-enabled',
+        message: 'STT is disabled in settings. Enable it in Settings > STT.',
+      });
       return;
     }
 
     if (!recognitionRef.current) {
-      setError('Speech recognition not initialized');
+      setError({
+        type: 'not-initialized',
+        message: 'Speech recognition not initialized. Please refresh the page.',
+      });
       return;
+    }
+
+    // Prevent starting if already stopping
+    if (isStoppingRef.current) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     try {
@@ -115,17 +177,31 @@ export function useSTT() {
       setTranscript('');
       setInterimTranscript('');
       setError(null);
+      isStoppingRef.current = false;
 
       // Start recognition
       recognitionRef.current.start();
     } catch (err: any) {
       console.error('[STT] Failed to start:', err);
-      setError(err.message || 'Failed to access microphone');
+
+      let errorType: STTErrorType = 'recognition-error';
+      let errorMessage = 'Failed to access microphone';
+
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorType = 'permission-denied';
+        errorMessage = 'Microphone permission denied. Please allow access in your browser settings.';
+      } else if (err.name === 'NotFoundError') {
+        errorType = 'no-microphone';
+        errorMessage = 'No microphone found. Please connect a microphone and try again.';
+      }
+
+      setError({ type: errorType, message: errorMessage });
     }
   }, [isSupported, isEnabled]);
 
   const stop = useCallback(() => {
-    if (recognitionRef.current) {
+    if (recognitionRef.current && !isStoppingRef.current) {
+      isStoppingRef.current = true;
       recognitionRef.current.stop();
     }
     if (silenceTimerRef.current) {

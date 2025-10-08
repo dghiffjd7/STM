@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useChatStore } from '../store';
 import { useAIStream } from '../hooks/useAIStream';
 import { useMaidState } from '../hooks/useMaidState';
 import { useTTS } from '../hooks/useTTS';
 import { useSTT } from '../hooks/useSTT';
+import { useConfigStore } from '../store';
 
 export function PromptBar() {
   const [input, setInput] = useState('');
@@ -11,6 +12,8 @@ export function PromptBar() {
   const { setState } = useMaidState();
   const { speak } = useTTS();
   const stt = useSTT();
+  const config = useConfigStore((state) => state.config);
+  const wasListeningRef = useRef(false);
 
   const { text, streaming, error, start, cancel } = useAIStream({
     onComplete: (fullText) => {
@@ -28,13 +31,13 @@ export function PromptBar() {
     },
   });
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!input.trim() || streaming) return;
+  // Unified submit function for both manual and voice input
+  const submitMessage = useCallback(
+    (content: string) => {
+      if (!content.trim() || streaming) return;
 
       // Add user message to chat
-      addMessage({ role: 'user', content: input });
+      addMessage({ role: 'user', content: content.trim() });
       setInput('');
 
       // Start AI stream
@@ -42,10 +45,18 @@ export function PromptBar() {
 
       start({
         system: 'You are STM, a helpful desktop maid assistant. Be concise and actionable.',
-        messages: [{ role: 'user', content: input }],
+        messages: [{ role: 'user', content: content.trim() }],
       });
     },
-    [input, streaming, addMessage, setState, start]
+    [streaming, addMessage, setState, start]
+  );
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      submitMessage(input);
+    },
+    [input, submitMessage]
   );
 
   const handleCancel = useCallback(() => {
@@ -60,24 +71,37 @@ export function PromptBar() {
     }
   }, [streaming, text, setState]);
 
-  // Sync STT transcript to input
+  // Sync STT transcript to input while listening
   useEffect(() => {
     if (stt.isListening) {
       setInput(stt.fullTranscript);
     }
   }, [stt.fullTranscript, stt.isListening]);
 
-  // Auto-submit when STT stops
+  // Auto-submit when STT stops (if configured)
   useEffect(() => {
-    if (!stt.isListening && stt.transcript && stt.transcript.trim()) {
-      // STT just finished, trigger submit if configured
-      const config = stt;
-      if (config) {
-        setInput(stt.transcript.trim());
-        stt.clear();
+    const wasListening = wasListeningRef.current;
+    const stoppedListening = wasListening && !stt.isListening;
+
+    if (stoppedListening && stt.transcript && stt.transcript.trim()) {
+      const transcriptText = stt.transcript.trim();
+      stt.clear();
+
+      // Auto-submit if enabled in config
+      if (config?.stt?.autoSubmit) {
+        // Use unified submit function
+        setTimeout(() => {
+          submitMessage(transcriptText);
+        }, 100);
+      } else {
+        // Just fill the input for manual submission
+        setInput(transcriptText);
       }
     }
-  }, [stt.isListening, stt.transcript]);
+
+    // Update ref at the end of the effect
+    wasListeningRef.current = stt.isListening;
+  }, [stt.isListening, stt.transcript, config, stt, submitMessage]);
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[500px]">
@@ -159,7 +183,20 @@ export function PromptBar() {
       {/* Show STT error if any */}
       {stt.error && (
         <div className="mt-2 px-4 py-2 rounded-xl bg-red-100/90 backdrop-blur-sm text-sm text-red-700">
-          {stt.error}
+          <div className="flex items-start gap-2">
+            <span className="font-semibold">🎤</span>
+            <div>
+              <div className="font-medium">
+                {stt.error.type === 'permission-denied' && '❌ Permission Denied'}
+                {stt.error.type === 'no-microphone' && '🔇 No Microphone'}
+                {stt.error.type === 'not-supported' && '⚠️ Not Supported'}
+                {stt.error.type === 'network-error' && '📡 Network Error'}
+                {stt.error.type === 'not-enabled' && '🔕 Disabled'}
+                {(stt.error.type === 'recognition-error' || stt.error.type === 'aborted' || stt.error.type === 'not-initialized') && '⚠️ Error'}
+              </div>
+              <div className="text-xs mt-0.5">{stt.error.message}</div>
+            </div>
+          </div>
         </div>
       )}
 
