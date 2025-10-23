@@ -1,20 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { useMaidState } from '../hooks/useMaidState';
-import { CharacterRenderer } from './CharacterRenderer';
 import { useConfigStore } from '../store';
+import { CharacterRenderer } from './CharacterRenderer';
 
 interface MaidProps {
   onClick?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-// Feature flag for Live2D - set to true when model is ready
+// Feature flag for Live2D - temporarily disabled due to WebGL shader issue
+// TODO: Fix WebGL initialization issue before re-enabling
 const USE_LIVE2D = false;
 
-export function Maid({ onClick }: MaidProps) {
+export function Maid({ onClick, onMouseEnter, onMouseLeave }: MaidProps) {
   const { state, setState } = useMaidState();
   const { config } = useConfigStore();
   const [isDragging, setIsDragging] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const constraintsRef = useRef<HTMLDivElement>(null);
 
   const x = useMotionValue(0);
@@ -25,6 +29,13 @@ export function Maid({ onClick }: MaidProps) {
 
   // Get current character ID
   const characterId = config?.characters?.currentCharacterId || 'default';
+  console.log('[Maid] Current character:', characterId);
+
+  // Handle character load error - fallback to placeholder
+  const handleCharacterError = (error: Error) => {
+    console.error('[Maid] Character load error:', error);
+    setHasError(true);
+  };
 
   useEffect(() => {
     if (isDragging) {
@@ -52,6 +63,8 @@ export function Maid({ onClick }: MaidProps) {
         onHoverStart={() => !isDragging && setState('hover')}
         onHoverEnd={() => !isDragging && setState('idle')}
         onClick={handleClick}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         style={{
           x,
           y,
@@ -61,13 +74,13 @@ export function Maid({ onClick }: MaidProps) {
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing"
       >
         <div className="relative w-48 h-48">
-          {USE_LIVE2D ? (
+          {USE_LIVE2D && !hasError ? (
             // Live2D character renderer
             <CharacterRenderer
               characterId={characterId}
               state={state}
               className="w-full h-full"
-              onError={(err) => console.error('[Maid] Character load error:', err)}
+              onError={handleCharacterError}
             />
           ) : (
             // Fallback placeholder maid sprite

@@ -36,10 +36,36 @@ export function createMaidWindow(): BrowserWindow {
   const isDev = !app.isPackaged;
   if (isDev) {
     win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools({ mode: 'detach' });
+    // DevTools can be opened manually with F12 if needed
+    // win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
+
+  // Debug logging for window lifecycle
+  win.webContents.on('did-start-navigation', (_event, url) => {
+    console.log('[maidWindow] did-start-navigation:', url);
+  });
+
+  win.webContents.on('did-start-loading', () => {
+    console.log('[maidWindow] did-start-loading');
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    console.log('[maidWindow] did-finish-load');
+  });
+
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('[maidWindow] did-fail-load', { errorCode, errorDescription, validatedURL });
+  });
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[maidWindow] render-process-gone', details);
+  });
+
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[maidWindow][console ${level}] ${message} (${sourceId}:${line})`);
+  });
 
   return win;
 }

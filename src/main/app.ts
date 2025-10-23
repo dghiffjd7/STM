@@ -12,6 +12,9 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
+  // Allow renderer processes to load Live2D assets via file:// URLs
+  app.commandLine.appendSwitch('allow-file-access-from-files');
+
   app.on('second-instance', () => {
     if (maidWindow) {
       if (maidWindow.isMinimized()) maidWindow.restore();

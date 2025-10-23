@@ -81,6 +81,14 @@ contextBridge.exposeInMainWorld('secret', {
   status: (provider: string) => ipcRenderer.invoke('secret.status', provider),
 });
 
+// Expose character management API
+contextBridge.exposeInMainWorld('character', {
+  getManifest: (characterId: string) => ipcRenderer.invoke('character.getManifest', characterId),
+  list: () => ipcRenderer.invoke('character.list'),
+  getResourcePath: (characterId: string, relativePath: string) =>
+    ipcRenderer.invoke('character.getResourcePath', characterId, relativePath),
+});
+
 // Expose AI API separately with event-based streaming
 contextBridge.exposeInMainWorld('ai', {
   stream: (payload: LLMRequest): Promise<{ id: string; error?: string }> => {
@@ -120,9 +128,16 @@ export type AIAPI = {
   cancel: (id: string) => Promise<{ ok: boolean; reason?: string }>;
 };
 
+export type CharacterAPI = {
+  getManifest: (characterId: string) => Promise<any>;
+  list: () => Promise<any[]>;
+  getResourcePath: (characterId: string, relativePath: string) => Promise<string>;
+};
+
 declare global {
   interface Window {
     electronAPI: ElectronAPI;
     ai: AIAPI;
+    character: CharacterAPI;
   }
 }

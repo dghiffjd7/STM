@@ -21,9 +21,16 @@ function migrateConfig(): void {
   const currentVersion = store.get('version', 0);
 
   if (currentVersion < 1) {
-    // Migration from v0 to v1 (if needed)
+    // Migration from v0 to v1
     console.log('[config] Migrating from v0 to v1');
-    // Add migration logic here
+
+    // Add characters section if missing
+    const characters = store.get('characters');
+    if (!characters) {
+      console.log('[config] Adding default characters section');
+      store.set('characters', DEFAULT_CONFIG.characters);
+    }
+
     store.set('version', 1);
   }
 

@@ -18,7 +18,9 @@
       "Bash(curl -s http://localhost:5173)",
       "Bash(pkill:*)",
       "WebSearch",
-      "WebFetch(domain:blog.williamchong.cloud)"
+      "WebFetch(domain:blog.williamchong.cloud)",
+      "Bash(npm info:*)",
+      "Bash(timeout 5 npm run dev:preload:*)"
     ],
     "deny": [],
     "ask": []

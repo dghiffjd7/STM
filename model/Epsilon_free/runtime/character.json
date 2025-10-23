@@ -1,0 +1,25 @@
+{
+  "id": "Epsilon_free",
+  "name": "Epsilon",
+  "version": "1.0.0",
+  "author": "Live2D Inc.",
+  "model": {
+    "path": "Epsilon_free.model3.json",
+    "scale": 1.0,
+    "position": { "x": 0, "y": 0 }
+  },
+  "motions": {
+    "idle": ["Idle"],
+    "hover": ["Tap"],
+    "drag": ["Shake"],
+    "speak": ["Tap", "Flick"],
+    "think": ["Idle"],
+    "error": ["Shake"],
+    "sleep": ["Idle"]
+  },
+  "lipSync": {
+    "enabled": true,
+    "parameterName": "PARAM_MOUTH_OPEN_Y",
+    "smoothing": 0.3
+  }
+}

@@ -6,6 +6,7 @@ import { registerFsHandlers } from './fs';
 import { registerSysHandlers } from './sys';
 import { registerConfigHandlers } from './config';
 import { registerPermissionHandlers } from './permission';
+import { registerCharacterHandlers } from './character';
 
 export function registerIpcHandlers(): void {
   registerAiHandlers();
@@ -14,6 +15,7 @@ export function registerIpcHandlers(): void {
   registerSysHandlers();
   registerConfigHandlers();
   registerPermissionHandlers();
+  registerCharacterHandlers();
 
   console.log('All IPC handlers registered');
 }

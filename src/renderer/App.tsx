@@ -1,13 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ChatView } from './components/ChatView';
 import { Maid } from './components/Maid';
 import { PromptBar } from './components/PromptBar';
-import { ChatView } from './components/ChatView';
 import { useConfigStore } from './store';
 
 export function App() {
   const { loadConfig, config } = useConfigStore();
   const [showUI, setShowUI] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  console.log('[App] Render start');
 
   useEffect(() => {
     loadConfig();
@@ -16,6 +17,8 @@ export function App() {
   // Apply appearance config to document and window
   useEffect(() => {
     if (!config) return;
+
+    console.log('[App] Applying appearance config:', config.appearance);
 
     const { theme, opacity, size, alwaysOnTop } = config.appearance;
 
@@ -42,6 +45,12 @@ export function App() {
     window.electronAPI.sysUpdateAppearance({ opacity, alwaysOnTop });
   }, [config]);
 
+  // 初始化：默认启用穿透（透明区域可点击穿透到桌面）
+  useEffect(() => {
+    console.log('[App] Initializing click-through: enabled by default');
+    window.electronAPI.sysSetIgnoreMouse(true);
+  }, []);
+
   const handleOpenSettings = () => {
     window.electronAPI.sysOpenSettings();
   };
@@ -50,30 +59,28 @@ export function App() {
     setShowUI(!showUI);
   };
 
-  // 监听鼠标移动，动态控制穿透
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    const container = containerRef.current;
+  // 鼠标进入可交互区域时禁用穿透
+  const handleMouseEnter = () => {
+    console.log('[App] Mouse entered interactive area - disabling click-through');
+    window.electronAPI.sysSetIgnoreMouse(false);
+  };
 
-    // 如果鼠标在根容器上（即透明背景区域），启用穿透
-    if (target === container) {
-      window.electronAPI.sysSetIgnoreMouse(true);
-    } else {
-      // 鼠标在桌宠或UI元素上，禁用穿透
-      window.electronAPI.sysSetIgnoreMouse(false);
-    }
+  // 鼠标离开可交互区域时重新启用穿透
+  const handleMouseLeave = () => {
+    console.log('[App] Mouse left interactive area - enabling click-through');
+    window.electronAPI.sysSetIgnoreMouse(true);
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="w-screen h-screen overflow-hidden bg-transparent"
-      onMouseMove={handleMouseMove}
-    >
-      <Maid onClick={handleMaidClick} />
+    <div className="w-screen h-screen overflow-hidden bg-transparent pointer-events-none">
+      <Maid
+        onClick={handleMaidClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      />
 
       {showUI && (
-        <>
+        <div className="pointer-events-auto" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <ChatView />
           <PromptBar />
 
@@ -98,7 +105,7 @@ export function App() {
               <circle cx="12" cy="12" r="3" />
             </svg>
           </button>
-        </>
+        </div>
       )}
     </div>
   );

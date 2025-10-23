@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -n VITE,MAIN,PRELOAD,ELECTRON -c green,cyan,magenta,yellow \"vite\" \"npm:dev:main\" \"npm:dev:preload\" \"npm:dev:electron\"",
     "dev:main": "tsc -p tsconfig.main.json --watch",
-    "dev:preload": "npx esbuild src/preload/index.ts --bundle --platform=node --external:electron --outfile=dist/preload/index.js --format=cjs --sourcemap --watch",
+    "dev:preload": "esbuild src/preload/index.ts --bundle --platform=node --external:electron --outfile=dist/preload/index.js --format=cjs --sourcemap --watch",
     "dev:electron": "wait-on dist/main/app.js dist/preload/index.js && electron .",
     "build:main": "tsc -p tsconfig.main.json",
     "build:preload": "npx esbuild src/preload/index.ts --bundle --platform=node --external:electron --outfile=dist/preload/index.js --format=cjs --sourcemap",
@@ -32,7 +32,7 @@
     "keytar": "^7.9.0",
     "lottie-web": "^5.12.2",
     "pixi-live2d-display": "^0.4.0",
-    "pixi.js": "^8.14.0"
+    "pixi.js": "^6.5.10"
   },
   "devDependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

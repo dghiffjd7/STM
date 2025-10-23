@@ -4,7 +4,8 @@ A desktop AI companion that lives on your screen, powered by LLM and TTS.
 
 ## Features
 
-- **Desktop Pet**: Draggable, interactive maid character with state-based animations
+- **Live2D Character**: Fully animated Live2D Cubism 4 model support
+- **Desktop Pet**: Draggable, interactive character with state-based animations
 - **AI Chat**: Stream responses from LLM with Silly Tavern-style interface
 - **Text-to-Speech**: Minimax TTS integration for voice playback
 - **Desktop Actions**: Execute file operations and system commands (with permission)
@@ -18,6 +19,7 @@ A desktop AI companion that lives on your screen, powered by LLM and TTS.
 - **Tailwind CSS** - Styling
 - **Framer Motion** - Animations
 - **Zustand** - State management
+- **PixiJS + pixi-live2d-display** - Live2D Cubism 4 rendering
 
 ## Development
 
@@ -88,6 +90,38 @@ To switch between AI providers, update the config via the UI or directly edit th
 
 All providers use the same streaming interface - no code changes needed!
 
+## Live2D Character
+
+The project comes with a test character (Epsilon) in `model/Epsilon_free/`. 
+
+### Character Structure
+
+```
+model/
+└── YourCharacter/
+    └── runtime/
+        ├── character.json          # STM manifest
+        ├── YourModel.model3.json   # Live2D model definition
+        ├── YourModel.moc3          # Compiled model data
+        ├── YourModel.2048/         # Textures
+        │   └── texture_00.png
+        ├── motion/                 # Animation files
+        └── expressions/            # Facial expressions
+```
+
+### Troubleshooting
+
+If the character doesn't load:
+
+1. **Check Console** (F12): Look for error messages
+2. **Verify Files**: Ensure all model files exist
+3. **See Documentation**: Check `LIVE2D_FIXED_20251020.md` for detailed troubleshooting
+
+Common issues:
+- **"Could not find Cubism runtime"**: Missing dependencies, run `npm install`
+- **"Failed to fetch"**: Check file paths and permissions
+- **White/black model**: Texture files missing or corrupted
+
 ## Permissions
 
 STM uses a granular permission system:
@@ -112,6 +146,7 @@ All actions are logged to audit files.
 - [x] LLM API integration (OpenAI-compatible, Anthropic, Gemini)
 - [x] Multi-provider architecture with single streaming interface
 - [x] Streaming chat UI with typewriter effect
+- [x] Live2D Cubism 4 integration
 - [ ] Minimax TTS integration
 - [ ] Audio playback queue
 
@@ -122,10 +157,17 @@ All actions are logged to audit files.
 - [ ] Audit logging
 
 ### Week 4: Polish & Package
-- [ ] Animation refinements
-- [ ] Settings UI
+- [ ] Lip sync with TTS audio
+- [ ] Expression system
+- [ ] Character management UI
 - [ ] First-run wizard
 - [ ] Packaging & installers
+
+## Documentation
+
+- `LIVE2D_FIXED_20251020.md` - Live2D integration and troubleshooting
+- `docs/` - Technical documentation
+- `claude.md` - Development guidelines
 
 ## License
 

@@ -88,11 +88,11 @@ export const DEFAULT_CONFIG = {
     silenceTimeout: 1500,
   },
   characters: {
-    currentCharacterId: 'default',
+    currentCharacterId: 'Epsilon_free',
     characters: [
       {
-        id: 'default',
-        name: 'Default Maid',
+        id: 'Epsilon_free',
+        name: 'Epsilon',
         path: '',
         enabled: true,
       },

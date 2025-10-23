@@ -1,12 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
-import { Application } from 'pixi.js';
-import { Live2DModel } from 'pixi-live2d-display';
-import type { MaidState } from '../../shared/types';
+// Import order is critical for Live2D:
+// 1. Import PIXI first
+import type { Application } from 'pixi.js';
+import * as PIXI from 'pixi.js';
 
-// Enable global Live2D support
+// 2. Set global PIXI before loading cubism
 if (typeof window !== 'undefined') {
-  (window as any).PIXI = { Application };
+  (window as any).PIXI = PIXI;
 }
+
+// React imports
+import { useEffect, useRef, useState } from 'react';
+import type { CharacterManifest, MaidState } from '../../shared/types';
+import { useCharacterMotion } from '../hooks/useCharacterMotion';
+
+// Live2DModel will be dynamically imported after ensuring Cubism core is loaded
+type Live2DModelType = any;
 
 interface CharacterRendererProps {
   characterId: string;
@@ -25,85 +33,175 @@ export function CharacterRenderer({
 }: CharacterRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<Application>();
-  const modelRef = useRef<Live2DModel>();
+  const modelRef = useRef<Live2DModelType>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [manifest, setManifest] = useState<CharacterManifest | null>(null);
+  const [pixiReady, setPixiReady] = useState(false);
+  const [live2dReady, setLive2dReady] = useState(false);
+
+  // Use motion hook to update animations based on state
+  useCharacterMotion(modelRef.current || null, manifest, state);
 
   // Initialize PixiJS application
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const app = new Application({
-      view: canvasRef.current,
-      width: 300,
-      height: 300,
-      backgroundAlpha: 0,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    });
+    try {
+      const app = new PIXI.Application({
+        view: canvasRef.current,
+        width: 300,
+        height: 300,
+        backgroundAlpha: 0,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+        // Workaround for WebGL shader issues
+        hello: false, // Disable hello message
+      });
 
-    appRef.current = app;
+      appRef.current = app;
+      setPixiReady(true);
+      console.log('[CharacterRenderer] PixiJS initialized successfully');
+
+      return () => {
+        app.destroy(true, { children: true, texture: true });
+        appRef.current = undefined;
+        setPixiReady(false);
+      };
+    } catch (err) {
+      console.error('[CharacterRenderer] Failed to initialize PixiJS:', err);
+      setError('Failed to initialize graphics engine');
+      setLoading(false);
+      onError?.(err instanceof Error ? err : new Error('Failed to initialize PixiJS'));
+    }
+  }, [onError]);
+
+  // Wait for Live2D Cubism Core to be ready
+  useEffect(() => {
+    if (!pixiReady) return;
+
+    const checkCubismCore = () => {
+      if ((window as any).Live2DCubismCore) {
+        console.log('[CharacterRenderer] Live2D Cubism Core detected');
+        setLive2dReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkCubismCore()) return;
+
+    // If not ready, poll every 100ms
+    console.log('[CharacterRenderer] Waiting for Live2D Cubism Core...');
+    const interval = setInterval(() => {
+      if (checkCubismCore()) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    // Timeout after 5 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      if (!(window as any).Live2DCubismCore) {
+        console.error('[CharacterRenderer] Live2D Cubism Core failed to load after 5 seconds');
+        setError('Live2D Cubism Core failed to load');
+        setLoading(false);
+      }
+    }, 5000);
 
     return () => {
-      app.destroy(true, { children: true, texture: true });
+      clearInterval(interval);
+      clearTimeout(timeout);
     };
-  }, []);
+  }, [pixiReady]);
 
   // Load character model
   useEffect(() => {
-    if (!appRef.current) return;
+    if (!pixiReady || !live2dReady) return;
+
+    let cancelled = false;
 
     const loadModel = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // TODO: Load character manifest and get model path
-        // For prototype, we'll need a sample model URL or path
-        // const manifest = await loadCharacterManifest(characterId);
-        // const modelPath = manifest.model.path;
+        // Dynamically import pixi-live2d-display AFTER Cubism core is ready
+        console.log('[CharacterRenderer] Importing pixi-live2d-display...');
+        const { Live2DModel } = await import('pixi-live2d-display/cubism4');
+        console.log('[CharacterRenderer] pixi-live2d-display loaded');
+        
+        if (cancelled) return;
 
-        // Placeholder: User will need to provide a Live2D model
-        // For now, we'll show error message if no model is available
-        throw new Error(
-          'Live2D model not configured. Please provide a .model3.json file path in character manifest.'
+        // Load character manifest
+        const loadedManifest = await window.character.getManifest(characterId);
+        if (cancelled) return;
+
+        setManifest(loadedManifest);
+        console.log('[CharacterRenderer] Manifest loaded:', loadedManifest);
+
+        // Get the file:// URL from IPC (already converted by main process)
+        const modelUrl = await window.character.getResourcePath(
+          characterId,
+          loadedManifest.model.path
         );
+        console.log('[CharacterRenderer] Model URL from IPC:', modelUrl);
 
-        // Commented out actual loading code for when model is available:
-        /*
-        const model = await Live2DModel.from(modelPath);
+        // Load the Live2D model
+        console.log('[CharacterRenderer] Attempting to load Live2D model...');
+        const model = await Live2DModel.from(modelUrl);
+        if (cancelled) return;
 
-        if (appRef.current && model) {
-          // Clear previous model
-          if (modelRef.current) {
-            appRef.current.stage.removeChild(modelRef.current);
-          }
+        console.log('[CharacterRenderer] Live2D model instance created:', model);
 
-          // Add model to stage
-          modelRef.current = model;
-          appRef.current.stage.addChild(model);
+        const app = appRef.current;
 
-          // Center the model
-          model.anchor.set(0.5, 0.5);
-          model.position.set(
-            appRef.current.screen.width / 2,
-            appRef.current.screen.height / 2
-          );
-
-          // Scale to fit
-          const scale = Math.min(
-            appRef.current.screen.width / model.width,
-            appRef.current.screen.height / model.height
-          ) * 0.8;
-          model.scale.set(scale);
-
-          setLoading(false);
-          onLoad?.();
+        if (!app || !app.stage || cancelled) {
+          console.warn('[CharacterRenderer] Pixi application unavailable during model load');
+          return;
         }
-        */
+
+        // Clear previous model
+        if (modelRef.current) {
+          app.stage.removeChild(modelRef.current);
+          modelRef.current.destroy();
+        }
+
+        // Add model to stage
+        modelRef.current = model;
+        app.stage.addChild(model);
+
+        // Center the model
+        model.anchor.set(0.5, 0.5);
+        model.position.set(app.screen.width / 2, app.screen.height / 2);
+
+        // Apply scale from manifest
+        const baseScale = loadedManifest.model.scale || 1.0;
+        const fitScale =
+          Math.min(app.screen.width / model.width, app.screen.height / model.height) * 0.8;
+        model.scale.set(baseScale * fitScale);
+
+        // Apply position offset from manifest
+        if (loadedManifest.model.position) {
+          model.position.x += loadedManifest.model.position.x;
+          model.position.y += loadedManifest.model.position.y;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setLoading(false);
+        onLoad?.();
+        console.log('[CharacterRenderer] Model loaded successfully');
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('[CharacterRenderer] Failed to load model!');
+        console.error('[CharacterRenderer] Error message:', errorMessage);
+        console.error('[CharacterRenderer] Error stack:', err instanceof Error ? err.stack : 'N/A');
+        console.error('[CharacterRenderer] Full error object:', err);
         setError(errorMessage);
         setLoading(false);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
@@ -111,19 +209,19 @@ export function CharacterRenderer({
     };
 
     loadModel();
-  }, [characterId, onLoad, onError]);
 
-  // Update animation based on state
-  useEffect(() => {
-    if (!modelRef.current) return;
+    // Cleanup on unmount or character change
+    return () => {
+      cancelled = true;
+      if (modelRef.current && appRef.current) {
+        appRef.current.stage.removeChild(modelRef.current);
+        modelRef.current.destroy();
+        modelRef.current = undefined;
+      }
+    };
+  }, [pixiReady, live2dReady, characterId, onLoad, onError]);
 
-    // TODO: Implement motion mapping
-    // const motions = manifest.motions[state];
-    // if (motions && motions.length > 0) {
-    //   const motion = motions[Math.floor(Math.random() * motions.length)];
-    //   modelRef.current.motion(state, motion);
-    // }
-  }, [state]);
+  // Note: Animation updates are handled by useCharacterMotion hook
 
   return (
     <div className={`relative ${className}`}>
